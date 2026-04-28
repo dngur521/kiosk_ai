@@ -69,44 +69,56 @@ async def get_recommendation(request: QueryRequest):
         include=["documents", "metadatas", "distances"]
     )
 
-    recommendations = []
+    # 1. 점수 계산 및 가중치 적용
+    temp_recommendations = []
     boost_keywords = ["상큼", "과일", "시원", "잠", "커피", "달콤", "디저트", "빵"]
 
     for i in range(len(results['ids'][0])):
-        # 순수 AI 점수 (AI Raw Score)
         raw_score = 1 - results['distances'][0][i]
-        
         name = results['metadatas'][0][i]['name']
         doc_content = results['documents'][0][i]
         
-        # 가중치 계산 과정 추적
         applied_boosts = []
         final_score = raw_score
-        
         for word in boost_keywords:
             if word in request.query and word in doc_content:
                 final_score += 0.05
                 applied_boosts.append(word)
         
-        # [디버깅] 각 메뉴별 상세 로그
-        boost_info = f" (+0.05 x {len(applied_boosts)} [{', '.join(applied_boosts)}])" if applied_boosts else " (No Boost)"
-        status_icon = "✅ PASS" if final_score >= 0.75 else "❌ FAIL"
-        
-        print(f"[{i+1}위] {name} (ID: {results['ids'][0][i]})")
-        print(f"   - Raw AI Score: {raw_score:.4f}")
-        print(f"   - Final Score:  {final_score:.4f} {boost_info} -> {status_icon}")
-        
-        recommendations.append({
+        temp_recommendations.append({
             "id": results['ids'][0][i],
             "name": name,
             "description": results['metadatas'][0][i]['description'],
-            "score": round(final_score, 4)
+            "raw_score": raw_score,
+            "score": round(final_score, 4),
+            "boosts": applied_boosts
         })
 
-    recommendations.sort(key=lambda x: x['score'], reverse=True)
-    print(f"{'='*60}\n")
+    # 2. 최고점 기준 정렬 (순위 확정)
+    temp_recommendations.sort(key=lambda x: x['score'], reverse=True)
+    
+    # 3. 최고점 확인 및 커트라인 계산 (백엔드 로직 동기화)
+    max_score = temp_recommendations[0]['score'] if temp_recommendations else 0.0
+    relative_threshold = max_score - 0.05
+    min_absolute_threshold = 0.5 # 백엔드 기준
 
-    return {"recommendations": recommendations}
+    print(f"📊 [판정 기준] 최고점: {max_score:.4f} / 상대 커트라인: {relative_threshold:.4f} (Min: {min_absolute_threshold})")
+    print(f"{'-'*60}")
+
+    # 4. 결과 출력 및 반환 데이터 구성
+    for i, res in enumerate(temp_recommendations):
+        # 🔥 백엔드 필터 로직: 점수가 0.5 이상 AND (최고점 - 0.05) 이상
+        is_pass = res['score'] >= min_absolute_threshold and res['score'] >= relative_threshold
+        status_icon = "✅ PASS" if is_pass else "❌ FAIL"
+        
+        boost_info = f" (+0.05 x {len(res['boosts'])} [{', '.join(res['boosts'])}])" if res['boosts'] else " (No Boost)"
+        
+        print(f"[{i+1}위] {res['name']} (ID: {res['id']})")
+        print(f"   - Raw AI Score: {res['raw_score']:.4f}")
+        print(f"   - Final Score:  {res['score']:.4f} {boost_info} -> {status_icon}")
+
+    print(f"{'='*60}\n")
+    return {"recommendations": temp_recommendations}
 
 @app.post("/refresh")
 async def refresh():
