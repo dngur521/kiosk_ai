@@ -90,7 +90,7 @@ async def get_recommendation(request: QueryRequest):
         
         # [디버깅] 각 메뉴별 상세 로그
         boost_info = f" (+0.05 x {len(applied_boosts)} [{', '.join(applied_boosts)}])" if applied_boosts else " (No Boost)"
-        status_icon = "✅ PASS" if final_score >= 0.8 else "❌ FAIL"
+        status_icon = "✅ PASS" if final_score >= 0.75 else "❌ FAIL"
         
         print(f"[{i+1}위] {name} (ID: {results['ids'][0][i]})")
         print(f"   - Raw AI Score: {raw_score:.4f}")
