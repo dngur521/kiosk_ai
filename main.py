@@ -118,7 +118,7 @@ async def get_recommendation(request: QueryRequest):
         print(f"   - Final Score:  {res['score']:.4f} {boost_info} -> {status_icon}")
 
     print(f"{'='*60}\n")
-    return {"recommendations": temp_recommendations}
+    return temp_recommendations
 
 @app.post("/refresh")
 async def refresh():
