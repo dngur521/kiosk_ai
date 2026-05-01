@@ -80,6 +80,12 @@ async def get_recommendation(request: QueryRequest):
         
         applied_boosts = []
         final_score = raw_score
+        
+        # 사용자가 말한 단어가 메뉴 이름에 직접 포함되면 점수를 대폭 높여 변별력을 확보합니다.
+        if request.query in name:
+            final_score += 0.20 
+            applied_boosts.append(f"NAME_MATCH({request.query})")
+        
         for word in boost_keywords:
             if word in request.query and word in doc_content:
                 final_score += 0.05
@@ -99,7 +105,7 @@ async def get_recommendation(request: QueryRequest):
     
     # 3. 최고점 확인 및 커트라인 계산 (백엔드 로직 동기화)
     max_score = temp_recommendations[0]['score'] if temp_recommendations else 0.0
-    relative_threshold = max_score - 0.05
+    relative_threshold = max_score - 0.03
     min_absolute_threshold = 0.5 # 백엔드 기준
 
     print(f"📊 [판정 기준] 최고점: {max_score:.4f} / 상대 커트라인: {relative_threshold:.4f} (Min: {min_absolute_threshold})")
