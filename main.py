@@ -106,7 +106,7 @@ async def get_recommendation(request: QueryRequest):
     # 3. 최고점 확인 및 커트라인 계산 (백엔드 로직 동기화)
     max_score = temp_recommendations[0]['score'] if temp_recommendations else 0.0
     relative_threshold = max_score - 0.03
-    min_absolute_threshold = 0.5 # 백엔드 기준
+    min_absolute_threshold = 0.78 # 백엔드 기준
 
     print(f"📊 [판정 기준] 최고점: {max_score:.4f} / 상대 커트라인: {relative_threshold:.4f} (Min: {min_absolute_threshold})")
     print(f"{'-'*60}")
@@ -124,7 +124,9 @@ async def get_recommendation(request: QueryRequest):
         print(f"   - Final Score:  {res['score']:.4f} {boost_info} -> {status_icon}")
 
     print(f"{'='*60}\n")
-    return temp_recommendations
+    filtered = [r for r in temp_recommendations
+                if r['score'] >= min_absolute_threshold and r['score'] >= relative_threshold]
+    return filtered
 
 @app.post("/refresh")
 async def refresh():
