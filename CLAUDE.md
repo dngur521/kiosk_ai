@@ -95,8 +95,8 @@ This is a single-file FastAPI app (`main.py`) that acts as an AI-powered menu re
 1. Prefix the user query with `"query: "` (E5 model convention) and retrieve top-3 nearest neighbors from ChromaDB.
 2. Convert cosine distance to similarity score: `score = 1 - distance`.
 3. Apply boosts: +0.20 if the query string appears in the menu name; +0.05 per keyword from `boost_keywords` that appears in both the query and the menu's document.
-4. Sort by final score descending. Filter: keep only items where `score >= 0.5` AND `score >= (max_score - 0.03)`. This threshold mirrors the backend kiosk logic.
-5. Return all candidates (both passing and failing) — the frontend/backend is expected to apply the same filter logic.
+4. Sort by final score descending. Filter: keep only items where `score >= 0.78` AND `score >= (max_score - 0.03)`. This threshold mirrors the backend kiosk logic.
+5. Return only items that pass the filter. Empty array means no confident match (Spring Boot treats this as NLP failure).
 
 **`POST /refresh`** — re-fetches and re-indexes menus from the external API without restarting the server.
 
@@ -104,7 +104,7 @@ This is a single-file FastAPI app (`main.py`) that acts as an AI-powered menu re
 
 - ChromaDB is in-memory (no persistence); the menu index is lost on restart and rebuilt from the live API.
 - The `semanticContext` field from the API is preferred over `name` for the indexed document text.
-- Filtering thresholds (`0.5` absolute, `max - 0.03` relative) are intentionally kept in sync with the downstream kiosk backend.
+- Filtering thresholds (`0.78` absolute, `max - 0.03` relative) are intentionally kept in sync with the downstream kiosk backend.
 
 ## Commit Message Convention
 
